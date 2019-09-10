@@ -271,14 +271,13 @@ class FutureTracker(object):
             self.bbg_suffix = 'Index'
             if roll_schedule is None:
                 roll_schedule = 'quarterly'
-
         else:
             raise KeyError('%s not valid. Currently only Comdty, Curncy of Index' % bbg_code)
+
 
         if type(roll_schedule) == list:
             self.roll_schedule = roll_schedule
 
-        #elif type(roll_schedule) == str:
         else:
             if roll_schedule in self.roll_schedules:
                 if type(self.roll_schedules[roll_schedule]) == dict:
@@ -291,10 +290,6 @@ class FutureTracker(object):
             else:
                 raise KeyError('%s roll schedule not supported' % roll_schedule)
 
-        #else:
-        #    raise KeyError('Roll schedule must be str or list')
-
-        # self.comm_bbg_code = comm_bbg_code
 
         self.roll_start_bday = roll_start_bday
 
