@@ -221,6 +221,10 @@ class FutureTracker(object):
 
     }
 
+    roll_schedules = {'BCOM':bcom_roll_schedules,
+                      'GSCI':gsci_roll_schedules,
+                      'quarterly':['H', 'H', 'H', 'M', 'M', 'M', 'U', 'U', 'U', 'Z', 'Z', 'Z']}
+
 
 
     def __init__(self, bbg_code, start_date = '2004-01-05', end_date = 'today',
@@ -253,14 +257,20 @@ class FutureTracker(object):
         if bbg_code[-6:].strip() == 'Comdty':
             self.bbg_prefix = bbg_code[:-8]
             self.bbg_suffix = 'Comdty'
+            if roll_schedule is None:
+                roll_schedule = 'GSCI'
 
         elif bbg_code[-6:].strip() == 'Curncy':
             self.bbg_prefix = bbg_code[:-8]
             self.bbg_suffix = 'Curncy'
+            if roll_schedule is None:
+                roll_schedule = 'quarterly'
 
         elif bbg_code[-5:].strip() == 'Index':
             self.bbg_prefix = bbg_code[:-7]
             self.bbg_suffix = 'Index'
+            if roll_schedule is None:
+                roll_schedule = 'quarterly'
 
         else:
             raise KeyError('%s not valid. Currently only Comdty, Curncy of Index' % bbg_code)
@@ -268,21 +278,21 @@ class FutureTracker(object):
         if type(roll_schedule) == list:
             self.roll_schedule = roll_schedule
 
-        elif type(roll_schedule) == str:
-            if roll_schedule == 'BCOM':
-                if self.bbg_prefix in self.bcom_roll_schedules:
-                    self.roll_schedule = self.bcom_roll_schedules[self.bbg_prefix]
-                else:
-                    raise KeyError('%s not in BCOM' % self.bbg_prefix)
-
-            if roll_schedule == 'GSCI':
-                if self.bbg_prefix in self.gsci_roll_schedules:
-                    self.roll_schedule = self.gsci_roll_schedules[self.bbg_prefix]
-                else:
-                    raise KeyError('%s not in GSCI' % self.bbg_prefix)
-
+        #elif type(roll_schedule) == str:
         else:
-            raise KeyError('Roll schedule must be str or list')
+            if roll_schedule in self.roll_schedules:
+                if type(self.roll_schedules[roll_schedule]) == dict:
+                    if self.bbg_prefix in self.roll_schedules[roll_schedule]:
+                        self.roll_schedule = self.roll_schedules[roll_schedule][self.bbg_prefix]
+                    else:
+                        raise KeyError('%s not in specified roll schedule' % self.bbg_prefix)
+                else:
+                    self.roll_schedule = self.roll_schedules[roll_schedule]
+            else:
+                raise KeyError('%s roll schedule not supported' % roll_schedule)
+
+        #else:
+        #    raise KeyError('Roll schedule must be str or list')
 
         # self.comm_bbg_code = comm_bbg_code
 
@@ -302,8 +312,133 @@ class FutureTracker(object):
 
         self._calculate_tr_index()
 
+    def _roll_schedule(self, bbg_code, schedule='default'):
 
+        # These are the roll schedules followed by the commodities in the Bloomberg Commodity Index
 
+        # See https://data.bloomberglp.com/indices/sites/2/2018/02/BCOM-Methodology-January-2018_FINAL-2.pdf
+
+        bcom_roll_schedules = {
+
+            'C 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'S 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'X', 'X', 'X', 'X', 'F+', 'F+'],
+
+            'SM1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'Z', 'Z', 'Z', 'Z', 'F+', 'F+'],
+
+            'BO1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'Z', 'Z', 'Z', 'Z', 'F+', 'F+'],
+
+            'W 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'KW1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'CC1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'CT1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'Z', 'Z', 'Z', 'Z', 'Z', 'H+'],
+
+            'KC1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'LC1 Comdty': ['G', 'J', 'J', 'M', 'M', 'Q', 'Q', 'V', 'V', 'Z', 'Z', 'G+'],
+
+            'LH1 Comdty': ['G', 'J', 'J', 'M', 'M', 'N', 'Q', 'V', 'V', 'Z', 'Z', 'G+'],
+
+            'SB1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'V', 'V', 'V', 'H+', 'H+', 'H+'],
+
+            'CL1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'CO1 Comdty': ['H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+', 'H+'],
+
+            'HO1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'QS1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'XB1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'NG1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'HG1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'LN1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LX1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LA1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'GC1 Comdty': ['G', 'J', 'J', 'M', 'M', 'Q', 'Q', 'Z', 'Z', 'Z', 'Z', 'G+'],
+
+            'SI1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+        }
+
+        # These are the roll schedules followed by the commodities in the S&P GSCI Commodity Index
+
+        # See https://www.spindices.com/documents/methodologies/methodology-sp-gsci.pdf
+
+        gsci_roll_schedules = {
+
+            'C 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'S 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'X', 'X', 'X', 'X', 'F+', 'F+'],
+
+            'W 1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'KW1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'SB1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'V', 'V', 'V', 'H+', 'H+', 'H+'],
+
+            'CC1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'CT1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'Z', 'Z', 'Z', 'Z', 'Z', 'H+'],
+
+            'KC1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'OJ1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'FC1 Comdty': ['H', 'H', 'K', 'K', 'Q', 'Q', 'Q', 'V', 'V', 'F+', 'F+', 'F+'],
+
+            'LC1 Comdty': ['G', 'J', 'J', 'M', 'M', 'Q', 'Q', 'V', 'V', 'Z', 'Z', 'G+'],
+
+            'LH1 Comdty': ['G', 'J', 'J', 'M', 'M', 'N', 'Q', 'V', 'V', 'Z', 'Z', 'G+'],
+
+            'CL1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'CO1 Comdty': ['H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+', 'H+'],
+
+            'HO1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'QS1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'XB1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'NG1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LX1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LL1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LN1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LT1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LP1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'LA1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'X', 'X', 'F+', 'F+'],
+
+            'GC1 Comdty': ['G', 'J', 'J', 'M', 'M', 'Q', 'Q', 'Z', 'Z', 'Z', 'Z', 'G+'],
+
+            'SI1 Comdty': ['H', 'H', 'K', 'K', 'N', 'N', 'U', 'U', 'Z', 'Z', 'Z', 'H+'],
+
+            'PL1 Comdty': ['J', 'J', 'J', 'N', 'N', 'N', 'V', 'V', 'V', 'F+', 'F+', 'F+'],
+
+        }
+
+        default_schedules = bcom_roll_schedules
+
+        roll_schedules = {'BCOM': bcom_roll_schedules,
+                          'GSCI': gsci_roll_schedules,
+                          'default': default_schedules}
+
+        self._roll_schedule = roll_schedules[schedule][bbg_code]
 
 
 
@@ -535,6 +670,10 @@ class FutureTracker(object):
             if self.weight_in == 1:
 
                 pnl = self.holdings_in * (price_in_d - price_in_dm1)
+
+            elif self.weight_out == 1:
+
+                pnl = self.holdings_out * (price_out_d - price_out_dm1)
 
             else:
 
